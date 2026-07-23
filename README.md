@@ -1,36 +1,37 @@
-# North Admin Panel — Draw SCRIPT (Railway)
+# North · Draw Loaders
 
-Private, second-panel control center for the Draw SCRIPT ecosystem. Purple /
-black / white dark-glassmorphism design.
+مشروع Node/Express واحد يقدم:
+- **`/`** و **`/loaders`** — صفحة العملاء لعرض المحمّلات وتحميلها بمفتاح.
+- **`/auth`** — تسجيل دخول ولوحة تحكم كاملة (إدارة محمّلات، فريق، سجلات، إحصاءات).
 
-## What it controls
+يعمل على Railway مع Postgres وVolume للملفات.
 
-- **EXE files** — upload / replace / version the loader (`DrawLoader.exe`).
-  Keys dashboard automatically serves the current version.
-- **Site images** — logo / hero / background used by the keys dashboard.
-- **Admins** — add / remove users with `dev` role (same permissions as `North`).
-- **Analytics** — who downloaded what, when, from which IP, how many times,
-  charts by day, top users, top files.
+## متطلبات البيئة (.env)
 
-## Deploy on Railway (same project as keys-dashboard)
+| المتغير | الوصف |
+|---|---|
+| `DATABASE_URL` | رابط Postgres (تلقائي على Railway) |
+| `VOLUME_PATH` | مسار الـ Volume، افتراضي `/data` |
+| `SESSION_SECRET` | سلسلة عشوائية طويلة لتوقيع الجلسات |
+| `ADMIN_USERNAME` | مسؤول أساسي (افتراضي `North`) |
+| `ADMIN_PASSWORD` | كلمة مروره (افتراضي `North123`) |
+| `PORT` | افتراضي `8080` |
 
-1. Create a second service in the SAME Railway project.
-2. Point it to the same **Postgres** plugin (the `DATABASE_URL` reference is
-   shared automatically) and mount the **same Volume** at `/data`.
-3. Set env vars:
-   - `SESSION_SECRET` — same as keys dashboard (or independent, both work)
-   - `ADMIN_USERNAME=North`, `ADMIN_PASSWORD=North123`
-4. Deploy.
+## التشغيل محليًا
+```bash
+npm install
+DATABASE_URL=... VOLUME_PATH=./data node server.js
+```
 
-## Login
+## النشر على Railway
+- ارفع المستودع.
+- أضف Postgres plugin — سيُحقن `DATABASE_URL` تلقائياً.
+- أنشئ Volume واربطه بمسار `/data`.
+- عيّن `SESSION_SECRET` قوي.
+- افتح الدومين على المشروع.
 
-- Username: `North`
-- Password: `North123`
+## واجهات API الرئيسية
+- عامة: `GET /api/public/loaders` — `GET /api/public/loaders/:id/image` — `POST /api/public/keys/check` — `GET /api/public/loaders/:id/download?key=...`
+- إدارية (Bearer): `/api/loaders` (CRUD + reorder)، `/api/files/:kind`، `/api/admins`، `/api/stats`، `/api/downloads`، `/api/logs`.
 
-Only users with role `dev` can enter this panel.
-
-## URL
-
-Assign the admin service its own domain in Railway (e.g.
-`admin.your-domain.com`). Keep it private — do not link to it from the public
-keys site.
+المفتاح لا يُفعَّل ولا يُربط بـ HWID من هذا الموقع — فقط يُتحقق من صلاحيته لتمكين التحميل.
