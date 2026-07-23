@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>North · Admin Panel — Draw SCRIPT</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#050308; --bg2:#0a0612; --panel:rgba(20,12,36,.72);
+    --line:rgba(180,140,255,.10); --line2:rgba(180,140,255,.24);
+    --text:#f5f0ff; --muted:#a798c2; --dim:#6b5f86;
+    --v:#a78bfa; --v2:#8b5cf6; --v3:#6d28d9; --accent:#c084fc;
+    --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+    --glow:0 0 40px rgba(167,139,250,.25);
+    --ease:cubic-bezier(.25,.46,.45,.94);
+    --sidebar-w:250px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Tajawal',sans-serif}
+  html,body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(1000px 700px at 10% -10%, rgba(139,92,246,.22), transparent 60%),
+      radial-gradient(900px 700px at 100% 100%, rgba(109,40,217,.20), transparent 60%),
+      linear-gradient(180deg,#050308 0%,#0a0612 100%);
+  }
+  body::after{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(180,140,255,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(180,140,255,.05) 1px,transparent 1px);
+    background-size:56px 56px;mask-image:radial-gradient(ellipse at center,#000 40%,transparent 80%);
+  }
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  .mono{font-family:'Space Grotesk',monospace}
+
+  .btn{padding:10px 16px;border-radius:12px;font-weight:700;transition:.25s var(--ease);display:inline-flex;align-items:center;gap:8px;font-size:14px}
+  .btn-ghost{border:1px solid var(--line2);color:var(--text)}
+  .btn-ghost:hover{background:rgba(167,139,250,.1);border-color:var(--v)}
+  .btn-primary{background:linear-gradient(135deg,var(--v),var(--v3));color:#fff;box-shadow:0 8px 24px rgba(139,92,246,.4)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(139,92,246,.55)}
+  .btn-danger{border:1px solid rgba(248,113,113,.35);color:#fecaca}
+  .btn-danger:hover{background:rgba(248,113,113,.1)}
+
+  /* ================= LOGIN ================= */
+  #login{position:fixed;inset:0;display:grid;place-items:center;z-index:100;padding:20px}
+  .login-card{
+    width:100%;max-width:420px;padding:34px;border-radius:24px;border:1px solid var(--line2);
+    background:linear-gradient(180deg,rgba(20,12,36,.9),rgba(12,6,22,.85));
+    backdrop-filter:blur(24px);box-shadow:0 40px 80px -20px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.05);
+    position:relative;overflow:hidden;
+  }
+  .login-card::before{content:'';position:absolute;inset:-1px;border-radius:24px;padding:1px;background:linear-gradient(135deg,rgba(167,139,250,.5),transparent 40%,transparent 60%,rgba(139,92,246,.3));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .brand-big{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+  .brand-big .logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--v),var(--v3));display:grid;place-items:center;font-size:22px;color:#fff;box-shadow:var(--glow)}
+  .brand-big h1{font-size:22px;font-weight:900;letter-spacing:.02em}
+  .brand-big span{color:var(--muted);font-size:12px}
+  .field{margin-top:16px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
+  .field .wrap{position:relative}
+  .field input{width:100%;padding:13px 42px 13px 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(5,3,8,.6);color:var(--text);font-size:15px;transition:.2s}
+  .field input:focus{outline:none;border-color:var(--v);box-shadow:0 0 0 4px rgba(139,92,246,.2)}
+  .field i.icon{position:absolute;top:50%;transform:translateY(-50%);right:14px;color:var(--dim)}
+  .full{width:100%;justify-content:center;padding:14px;margin-top:20px}
+  .alert{display:none;padding:10px 12px;border-radius:10px;font-size:13px;margin-top:10px}
+  .alert.err{display:block;background:rgba(248,113,113,.14);color:#fecaca;border:1px solid rgba(248,113,113,.3)}
+  .foot-note{color:var(--dim);font-size:12px;text-align:center;margin-top:22px}
+
+  /* ================= APP LAYOUT ================= */
+  #app{display:none}
+  .layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:100vh}
+  .sidebar{
+    position:sticky;top:0;height:100vh;padding:24px 18px;
+    background:linear-gradient(180deg,rgba(20,12,36,.72),rgba(10,6,18,.7));
+    border-left:1px solid var(--line);backdrop-filter:blur(20px);
+  }
+  .sb-brand{display:flex;align-items:center;gap:12px;padding:0 8px 22px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .sb-brand .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--v),var(--v3));display:grid;place-items:center;color:#fff;box-shadow:var(--glow)}
+  .sb-brand b{font-size:15px;font-weight:900;letter-spacing:.04em}
+  .sb-brand small{display:block;color:var(--muted);font-size:11px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;color:var(--muted);font-weight:600;cursor:pointer;transition:.2s var(--ease);margin-bottom:4px}
+  .nav-item i{width:20px;text-align:center}
+  .nav-item:hover{background:rgba(167,139,250,.08);color:var(--text)}
+  .nav-item.active{background:linear-gradient(135deg,rgba(139,92,246,.24),rgba(109,40,217,.12));color:#fff;border:1px solid var(--line2)}
+  .sb-foot{position:absolute;bottom:20px;left:18px;right:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .me{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:rgba(139,92,246,.08)}
+  .me .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--v),var(--v3));display:grid;place-items:center;font-weight:900;color:#fff}
+  .me b{display:block;font-size:13px}
+  .me span{color:var(--muted);font-size:11px}
+
+  .content{padding:34px 40px;min-width:0}
+  .page-head{display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:16px;margin-bottom:28px}
+  .page-head h1{font-size:28px;font-weight:900;letter-spacing:-.01em}
+  .page-head p{color:var(--muted);margin-top:4px;font-size:14px}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .kpi{padding:22px;border-radius:18px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);position:relative;overflow:hidden}
+  .kpi::after{content:'';position:absolute;top:-30px;left:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(139,92,246,.2),transparent 70%);pointer-events:none}
+  .kpi .lbl{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .kpi .val{font-size:34px;font-weight:900;margin-top:8px;color:var(--v)}
+  .kpi .val.ok{color:var(--ok)} .kpi .val.warn{color:var(--warn)}
+  .kpi .sub{color:var(--dim);font-size:12px;margin-top:4px}
+
+  .panel{padding:24px;border-radius:20px;border:1px solid var(--line2);background:var(--panel);backdrop-filter:blur(18px);margin-bottom:20px}
+  .panel h3{font-size:17px;font-weight:900;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .panel h3 i{color:var(--v)}
+  .panel h3 .side{margin-right:auto;font-size:12px;color:var(--muted);font-weight:500}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .row input,.row select{padding:11px 14px;border-radius:10px;border:1px solid var(--line2);background:rgba(5,3,8,.6);color:var(--text);font-family:inherit;font-size:14px}
+  .row input:focus,.row select:focus{outline:none;border-color:var(--v)}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:12px;text-align:right;font-size:13px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
+  .p-cur{background:rgba(52,211,153,.15);color:#6ee7b7}
+  .p-old{background:rgba(160,140,200,.15);color:#c4b5fd}
+
+  .drop{padding:28px;border:2px dashed var(--line2);border-radius:16px;text-align:center;transition:.25s var(--ease);cursor:pointer;background:rgba(5,3,8,.4)}
+  .drop:hover,.drop.drag{border-color:var(--v);background:rgba(139,92,246,.06)}
+  .drop i{font-size:32px;color:var(--v);margin-bottom:8px;display:block}
+  .drop b{display:block;margin-bottom:4px}
+  .drop span{color:var(--muted);font-size:12px}
+  .drop input{display:none}
+
+  .page{display:none} .page.active{display:block}
+  .chart-wrap{position:relative;height:280px}
+
+  .toast{position:fixed;bottom:20px;left:20px;padding:12px 18px;border-radius:12px;background:linear-gradient(135deg,var(--v),var(--v3));color:#fff;font-weight:600;box-shadow:0 20px 40px rgba(139,92,246,.4);z-index:200;transform:translateY(20px);opacity:0;transition:.3s}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.err{background:linear-gradient(135deg,#dc2626,#7f1d1d)}
+
+  @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.kpis,.grid-2,.grid-3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="brand-big">
+      <div class="logo"><i class="fa-solid fa-shield-halved"></i></div>
+      <div><h1>NORTH</h1><span>Admin Control Panel</span></div>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:6px">دخول محدود لأصحاب صلاحية <b class="mono" style="color:var(--v)">dev</b> فقط.</p>
+    <form onsubmit="doLogin(event)">
+      <div class="field"><label>اسم المستخدم</label>
+        <div class="wrap"><input id="u" type="text" placeholder="North" autocomplete="username"><i class="fa-solid fa-user icon"></i></div>
+      </div>
+      <div class="field"><label>كلمة المرور</label>
+        <div class="wrap"><input id="p" type="password" placeholder="••••••••" autocomplete="current-password"><i class="fa-solid fa-lock icon"></i></div>
+      </div>
+      <div id="alert" class="alert"></div>
+      <button class="btn btn-primary full" type="submit"><i class="fa-solid fa-arrow-left"></i> الدخول إلى اللوحة</button>
+    </form>
+    <div class="foot-note">© Draw SCRIPT · Admin Panel · Railway</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sb-brand">
+        <div class="logo"><i class="fa-solid fa-shield-halved"></i></div>
+        <div><b>NORTH</b><small>Admin Panel</small></div>
+      </div>
+      <div class="nav-item active" data-page="overview"><i class="fa-solid fa-gauge-high"></i><span>نظرة عامة</span></div>
+      <div class="nav-item" data-page="loaders"><i class="fa-solid fa-microchip"></i><span>ملفات EXE</span></div>
+      <div class="nav-item" data-page="images"><i class="fa-solid fa-image"></i><span>صور الموقع</span></div>
+      <div class="nav-item" data-page="admins"><i class="fa-solid fa-user-shield"></i><span>الأدمنز</span></div>
+      <div class="nav-item" data-page="downloads"><i class="fa-solid fa-cloud-arrow-down"></i><span>سجل التحميلات</span></div>
+      <div class="nav-item" data-page="logs"><i class="fa-solid fa-clock-rotate-left"></i><span>سجل النظام</span></div>
+      <div class="sb-foot">
+        <div class="me">
+          <div class="av" id="av">N</div>
+          <div style="flex:1"><b id="me-name">North</b><span class="mono">dev</span></div>
+          <button class="btn btn-danger" onclick="doLogout()" title="خروج"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+
+      <!-- OVERVIEW -->
+      <section class="page active" id="page-overview">
+        <div class="page-head">
+          <div><h1>نظرة عامة</h1><p>ملخّص حي لأداء منصة Draw SCRIPT</p></div>
+          <button class="btn btn-ghost" onclick="loadStats()"><i class="fa-solid fa-arrows-rotate"></i> تحديث</button>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">إجمالي التحميلات</div><div class="val" id="s-dl">0</div><div class="sub">منذ إطلاق النظام</div></div>
+          <div class="kpi"><div class="lbl">مفاتيح نشطة</div><div class="val ok" id="s-ka">0</div><div class="sub">صالحة الآن</div></div>
+          <div class="kpi"><div class="lbl">إجمالي المفاتيح</div><div class="val" id="s-kt">0</div><div class="sub">في قاعدة البيانات</div></div>
+          <div class="kpi"><div class="lbl">الأدمنز</div><div class="val warn" id="s-ad">0</div><div class="sub">صلاحية dev</div></div>
+        </div>
+        <div class="grid-3">
+          <div class="panel">
+            <h3><i class="fa-solid fa-chart-column"></i> التحميلات آخر 30 يوم</h3>
+            <div class="chart-wrap"><canvas id="chartDay"></canvas></div>
+          </div>
+          <div class="panel">
+            <h3><i class="fa-solid fa-trophy"></i> أعلى المستخدمين تحميلاً</h3>
+            <table><tbody id="top-users"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- LOADERS -->
+      <section class="page" id="page-loaders">
+        <div class="page-head"><div><h1>ملفات اللودر (EXE)</h1><p>ارفع نسخة جديدة بضغطة زر · الإصدار المعلَّم “نشط” هو الي يحمّله المستخدمون</p></div></div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-upload"></i> رفع نسخة جديدة</h3>
+          <div class="row" style="margin-bottom:14px">
+            <input id="exe-slot" type="text" value="loader" placeholder="السلوت (مثلاً loader)">
+            <input id="exe-version" type="text" placeholder="الإصدار (اختياري: v2.1)">
+          </div>
+          <label class="drop" id="drop-exe">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <b>اسحب ملف EXE هنا أو اضغط للاختيار</b>
+            <span>الحد الأقصى 200MB · يتم أرشفة الإصدار السابق تلقائياً</span>
+            <input type="file" accept=".exe,application/octet-stream" onchange="uploadFile('exe', this)">
+          </label>
+        </div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-list"></i> الإصدارات <span class="side">الحالي = المُقدَّم للمستخدمين</span></h3>
+          <div style="overflow:auto"><table>
+            <thead><tr><th>الاسم</th><th>السلوت</th><th>الإصدار</th><th>الحجم</th><th>رفعه</th><th>الحالة</th><th></th></tr></thead>
+            <tbody id="tb-exe"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- IMAGES -->
+      <section class="page" id="page-images">
+        <div class="page-head"><div><h1>صور الموقع</h1><p>لوقو، خلفيات، أيقونات — تُخدم مباشرة عبر <span class="mono">/api/site-image/&lt;slot&gt;</span> في موقع المفاتيح</p></div></div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-upload"></i> رفع صورة</h3>
+          <div class="row" style="margin-bottom:14px">
+            <select id="img-slot">
+              <option value="logo">Logo</option>
+              <option value="hero">Hero background</option>
+              <option value="background">Background</option>
+              <option value="icon">Icon</option>
+              <option value="favicon">Favicon</option>
+            </select>
+          </div>
+          <label class="drop" id="drop-img">
+            <i class="fa-solid fa-image"></i>
+            <b>اسحب الصورة هنا أو اضغط للاختيار</b>
+            <span>PNG · JPG · WEBP · SVG</span>
+            <input type="file" accept="image/*" onchange="uploadFile('image', this)">
+          </label>
+        </div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-list"></i> الصور المرفوعة</h3>
+          <div style="overflow:auto"><table>
+            <thead><tr><th>السلوت</th><th>الاسم</th><th>الحجم</th><th>رفعها</th><th>الحالة</th><th></th></tr></thead>
+            <tbody id="tb-img"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- ADMINS -->
+      <section class="page" id="page-admins">
+        <div class="page-head"><div><h1>إدارة الأدمنز</h1><p>أضف أشخاصاً بنفس صلاحية <span class="mono" style="color:var(--v)">dev</span> — كامل الصلاحيات على المفاتيح واللوحة</p></div></div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-user-plus"></i> إضافة أدمن جديد</h3>
+          <div class="row">
+            <input id="a-user" type="text" placeholder="اسم المستخدم">
+            <input id="a-pass" type="text" placeholder="كلمة المرور">
+            <button class="btn btn-primary" onclick="addAdmin()"><i class="fa-solid fa-plus"></i> إضافة</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-users"></i> قائمة الأدمنز</h3>
+          <table><thead><tr><th>المستخدم</th><th>الدور</th><th>أُنشئ</th><th></th></tr></thead><tbody id="tb-admins"></tbody></table>
+        </div>
+      </section>
+
+      <!-- DOWNLOADS -->
+      <section class="page" id="page-downloads">
+        <div class="page-head"><div><h1>سجل التحميلات</h1><p>من حمّل، أيش، متى، ومن أي IP</p></div><button class="btn btn-ghost" onclick="loadDownloads()"><i class="fa-solid fa-arrows-rotate"></i> تحديث</button></div>
+        <div class="panel">
+          <div style="overflow:auto;max-height:600px"><table>
+            <thead><tr><th>التاريخ</th><th>المستخدم</th><th>الملف</th><th>IP</th><th>User Agent</th></tr></thead>
+            <tbody id="tb-dl"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- LOGS -->
+      <section class="page" id="page-logs">
+        <div class="page-head"><div><h1>سجل النظام</h1><p>كل الأنشطة الحساسة على المنصة</p></div><button class="btn btn-ghost" onclick="loadLogs()"><i class="fa-solid fa-arrows-rotate"></i> تحديث</button></div>
+        <div class="panel">
+          <div style="overflow:auto;max-height:600px"><table>
+            <thead><tr><th>التاريخ</th><th>الإجراء</th><th>المستخدم</th><th>التفاصيل</th></tr></thead>
+            <tbody id="tb-logs"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let TOKEN = localStorage.getItem('north_token') || '';
+let ME = null;
+let chartDay = null;
+
+function toast(msg,err=false){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.className='toast',2600); }
+function alertBox(msg){ const a=document.getElementById('alert'); a.textContent=msg; a.className='alert err'; setTimeout(()=>a.className='alert',4000); }
+
+async function api(path, opts={}, isForm=false){
+  const headers = { ...(TOKEN?{Authorization:'Bearer '+TOKEN}:{}), ...(opts.headers||{}) };
+  if(!isForm) headers['Content-Type'] = 'application/json';
+  const r = await fetch(path, { ...opts, headers });
+  return r;
+}
+
+async function doLogin(e){
+  e.preventDefault();
+  const username = document.getElementById('u').value.trim();
+  const password = document.getElementById('p').value;
+  const r = await api('/api/login',{method:'POST', body: JSON.stringify({username,password})});
+  if(!r.ok){ alertBox('بيانات دخول خاطئة أو صلاحية غير كافية'); return; }
+  const d = await r.json();
+  TOKEN = d.token; ME = d.user; localStorage.setItem('north_token',TOKEN);
+  enterApp();
+}
+async function doLogout(){ await api('/api/logout',{method:'POST'}); TOKEN=''; localStorage.removeItem('north_token'); location.reload(); }
+
+function enterApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('me-name').textContent = ME.username;
+  document.getElementById('av').textContent = (ME.username||'?').slice(0,1).toUpperCase();
+  loadStats(); loadFiles('exe'); loadFiles('image'); loadAdmins();
+}
+
+// nav
+document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', ()=>{
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  const p = el.dataset.page;
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(p==='downloads') loadDownloads();
+  else if(p==='logs') loadLogs();
+  else if(p==='overview') loadStats();
+}));
+
+async function loadStats(){
+  const r = await api('/api/stats'); if(!r.ok) return;
+  const s = await r.json();
+  document.getElementById('s-dl').textContent = s.downloads_total;
+  document.getElementById('s-ka').textContent = s.keys_active;
+  document.getElementById('s-kt').textContent = s.keys_total;
+  document.getElementById('s-ad').textContent = s.admins_count;
+  const tu = document.getElementById('top-users');
+  tu.innerHTML = s.top_users.length ? s.top_users.map(u=>`<tr><td>${u.u}</td><td style="color:var(--v);font-weight:900;text-align:left">${u.c}</td></tr>`).join('') : '<tr><td style="color:var(--dim);text-align:center;padding:20px">لا يوجد بيانات</td></tr>';
+
+  // chart
+  const labels = s.downloads_by_day.map(d=>d.d);
+  const data = s.downloads_by_day.map(d=>d.c);
+  if(chartDay) chartDay.destroy();
+  const ctx = document.getElementById('chartDay').getContext('2d');
+  const g = ctx.createLinearGradient(0,0,0,280);
+  g.addColorStop(0,'rgba(139,92,246,.5)'); g.addColorStop(1,'rgba(139,92,246,0)');
+  chartDay = new Chart(ctx,{
+    type:'line',
+    data:{ labels, datasets:[{ label:'تحميلات', data, borderColor:'#a78bfa', backgroundColor:g, fill:true, tension:.35, borderWidth:2, pointRadius:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ ticks:{ color:'#a798c2' }, grid:{ color:'rgba(180,140,255,.06)' } }, y:{ ticks:{ color:'#a798c2' }, grid:{ color:'rgba(180,140,255,.06)' }, beginAtZero:true } } }
+  });
+}
+
+async function loadFiles(kind){
+  const r = await api('/api/files/'+kind); if(!r.ok) return;
+  const {files} = await r.json();
+  const tb = document.getElementById(kind==='exe'?'tb-exe':'tb-img');
+  tb.innerHTML = files.length? '' : `<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:26px">لا يوجد ملفات بعد</td></tr>`;
+  for(const f of files){
+    const pill = f.is_current ? '<span class="pill p-cur">نشط</span>' : '<span class="pill p-old">أرشيف</span>';
+    const size = f.size ? (f.size/1024/1024).toFixed(2)+' MB' : '-';
+    if(kind==='exe'){
+      tb.insertAdjacentHTML('beforeend',`<tr>
+        <td class="mono" style="font-size:12px">${f.name}</td>
+        <td>${f.slot}</td>
+        <td class="mono" style="color:var(--v)">${f.version||'-'}</td>
+        <td>${size}</td>
+        <td style="color:var(--muted)">${f.uploaded_by||'-'}</td>
+        <td>${pill}</td>
+        <td>
+          ${f.is_current?'':`<button class="btn btn-ghost" onclick="activateFile('${f.id}')"><i class="fa-solid fa-check"></i></button>`}
+          <button class="btn btn-danger" onclick="deleteFile('${f.id}','exe')"><i class="fa-solid fa-trash"></i></button>
+        </td></tr>`);
+    } else {
+      tb.insertAdjacentHTML('beforeend',`<tr>
+        <td><b style="color:var(--v)">${f.slot}</b></td>
+        <td class="mono" style="font-size:12px">${f.name}</td>
+        <td>${size}</td>
+        <td style="color:var(--muted)">${f.uploaded_by||'-'}</td>
+        <td>${pill}</td>
+        <td>
+          ${f.is_current?'':`<button class="btn btn-ghost" onclick="activateFile('${f.id}')"><i class="fa-solid fa-check"></i></button>`}
+          <button class="btn btn-danger" onclick="deleteFile('${f.id}','image')"><i class="fa-solid fa-trash"></i></button>
+        </td></tr>`);
+    }
+  }
+}
+
+async function uploadFile(kind, input){
+  const file = input.files[0]; if(!file) return;
+  const slot = kind==='exe' ? (document.getElementById('exe-slot').value.trim()||'loader') : document.getElementById('img-slot').value;
+  const version = kind==='exe' ? (document.getElementById('exe-version').value.trim()||'') : '';
+  const fd = new FormData(); fd.append('file', file); if(version) fd.append('version', version);
+  const r = await fetch('/api/files/'+kind+'/'+encodeURIComponent(slot), { method:'POST', headers:{ Authorization:'Bearer '+TOKEN }, body:fd });
+  input.value='';
+  if(!r.ok){ toast('فشل الرفع',true); return; }
+  toast('تم الرفع بنجاح ✓');
+  loadFiles(kind);
+}
+async function activateFile(id){ const r=await api('/api/files/'+id+'/activate',{method:'POST'}); if(r.ok){toast('تم التفعيل ✓'); loadFiles('exe'); loadFiles('image');} }
+async function deleteFile(id, kind){ if(!confirm('حذف هذا الملف؟')) return; const r=await api('/api/files/'+id,{method:'DELETE'}); if(r.ok){toast('تم الحذف ✓'); loadFiles(kind);} }
+
+async function loadAdmins(){
+  const r = await api('/api/admins'); if(!r.ok) return;
+  const {admins} = await r.json();
+  const tb = document.getElementById('tb-admins');
+  tb.innerHTML = admins.map(a=>`
+    <tr>
+      <td><b>${a.username}</b></td>
+      <td><span class="pill p-cur">${a.role}</span></td>
+      <td style="color:var(--muted)">${new Date(a.created_at).toLocaleString('ar-EG')}</td>
+      <td>${a.username==='North'?'<span style="color:var(--dim);font-size:12px">أساسي</span>':`<button class="btn btn-danger" onclick="delAdmin('${a.id}','${a.username}')"><i class="fa-solid fa-trash"></i></button>`}</td>
+    </tr>`).join('');
+}
+async function addAdmin(){
+  const username = document.getElementById('a-user').value.trim();
+  const password = document.getElementById('a-pass').value;
+  if(!username||!password){ toast('املأ الحقول',true); return; }
+  const r = await api('/api/admins',{method:'POST',body:JSON.stringify({username,password})});
+  if(!r.ok){ toast('فشل: قد يكون الاسم موجود', true); return; }
+  document.getElementById('a-user').value=''; document.getElementById('a-pass').value='';
+  toast('أُضيف الأدمن ✓'); loadAdmins(); loadStats();
+}
+async function delAdmin(id, name){
+  if(!confirm('حذف '+name+' ؟')) return;
+  const r = await api('/api/admins/'+id,{method:'DELETE'});
+  if(r.ok){ toast('تم الحذف ✓'); loadAdmins(); loadStats(); }
+}
+
+async function loadDownloads(){
+  const r = await api('/api/downloads'); if(!r.ok) return;
+  const {downloads} = await r.json();
+  const tb = document.getElementById('tb-dl');
+  tb.innerHTML = downloads.length ? downloads.map(d=>`
+    <tr>
+      <td class="mono" style="font-size:11px">${new Date(d.created_at).toLocaleString('ar-EG')}</td>
+      <td><b>${d.username||'ضيف'}</b></td>
+      <td><span class="pill p-cur">${d.slot||'-'}</span></td>
+      <td class="mono" style="color:var(--muted);font-size:12px">${d.ip||'-'}</td>
+      <td style="color:var(--dim);font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(d.user_agent||'').replace(/</g,'&lt;')}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:26px">لا يوجد تحميلات بعد</td></tr>';
+}
+async function loadLogs(){
+  const r = await api('/api/logs'); if(!r.ok) return;
+  const {logs} = await r.json();
+  const tb = document.getElementById('tb-logs');
+  tb.innerHTML = logs.length ? logs.map(l=>`
+    <tr>
+      <td class="mono" style="font-size:11px">${new Date(l.created_at).toLocaleString('ar-EG')}</td>
+      <td><span class="pill p-cur">${l.action}</span></td>
+      <td>${l.username||'-'}</td>
+      <td class="mono" style="color:var(--dim);font-size:11px">${l.details?JSON.stringify(l.details).replace(/</g,'&lt;'):''}</td>
+    </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--dim);padding:26px">لا يوجد سجلات بعد</td></tr>';
+}
+
+// drag & drop
+['drop-exe','drop-img'].forEach(id=>{
+  const el=document.getElementById(id); if(!el) return;
+  ['dragenter','dragover'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();el.classList.add('drag')}));
+  ['dragleave','drop'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();el.classList.remove('drag')}));
+  el.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(!f) return; const input=el.querySelector('input'); const dt=new DataTransfer(); dt.items.add(f); input.files=dt.files; input.dispatchEvent(new Event('change')); });
+});
+
+// auto
+(async ()=>{
+  if(!TOKEN) return;
+  const r = await api('/api/me');
+  if(!r.ok){ localStorage.removeItem('north_token'); return; }
+  const d = await r.json(); ME = d.user; enterApp();
+})();
+</script>
+</body>
+</html>
